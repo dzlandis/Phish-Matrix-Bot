@@ -250,6 +250,20 @@ export default class CommandHandler {
     if (urlMatch) {
       this.client.sendReadReceipt(roomId, event.eventId);
       for (const url of urlMatch) {
+        if (
+          url.toLowerCase().startsWith('https://matrix.org/') ||
+          url.toLowerCase().startsWith('https://matrix.to/') ||
+          url.toLowerCase().startsWith('https://spec.matrix.org/') ||
+          url.toLowerCase().startsWith('https://view.matrix.org/') ||
+          url.toLowerCase().startsWith('https://t.me/') ||
+          url.toLowerCase().startsWith('https://www.youtube.com/') ||
+          url.toLowerCase().startsWith('https://www.sec.gov/') ||
+          url.toLowerCase().startsWith('https://github.com/') ||
+          url.toLowerCase().startsWith('https://gitlab.com/') ||
+          url.toLowerCase().startsWith('https://tenor.com/')
+        )
+          continue;
+
         const transactionId = uuid();
         LogService.info('url-scan', `URL Found! Scanning... | ${transactionId}`);
         const antiFishBody = { message: url };
