@@ -263,7 +263,7 @@ export default class CommandHandler {
           }
         });
 
-        const antiFishOutput = await antiFish.json();
+        const antiFishOutput = await antiFish.json().catch(e => LogService.error('url-scan-method-1', e));
         if (antiFishOutput && antiFishOutput.match === true)
           return warnMatrix(this.client, url, 'phish', 1, transactionId);
         LogService.info('url-scan', `URL not marked as problematic from method 1, continuing... | ${transactionId}`);
@@ -284,7 +284,9 @@ export default class CommandHandler {
           }
         });
         if (!bolsterJob.ok) continue;
-        const bolsterJobOutput: BolsterJob = await bolsterJob.json();
+        const bolsterJobOutput: BolsterJob = await bolsterJob
+          .json()
+          .catch(e => LogService.error('url-scan-method-2', e));
 
         if (bolsterJobOutput.jobID) {
           const bolsterBody = {
@@ -300,7 +302,7 @@ export default class CommandHandler {
                 'Content-Type': 'application/json'
               }
             });
-            const bolsterInfo: BolsterInfo = await bolster.json();
+            const bolsterInfo: BolsterInfo = await bolster.json().catch(e => LogService.error('url-scan-method-2', e));
             if (bolsterInfo.status.toLowerCase() === 'done') {
               if (bolsterInfo.disposition === 'clean')
                 return LogService.info(
