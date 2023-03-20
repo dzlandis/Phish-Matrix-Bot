@@ -215,37 +215,37 @@ export default class CommandHandler {
       LogService.info('url-scan', `Matrix Warn Complete | ${transactionId}`);
     }
 
-    interface BolsterJob {
-      jobID: string;
-      timestamp: number;
-    }
+    // interface BolsterJob {
+    //   jobID: string;
+    //   timestamp: number;
+    // }
 
-    interface BolsterInfo {
-      job_id: string;
-      status: 'PENDING' | 'DONE';
-      url: string;
-      url_sha256: string;
-      disposition:
-        | 'phish'
-        | 'scam'
-        | 'adult'
-        | 'drug_spam'
-        | 'gambling'
-        | 'suspicious'
-        | 'likely_phish'
-        | 'cryptojacking'
-        | 'streaming'
-        | 'hacked_website'
-        | 'mortgage'
-        | 'clean';
-      brand: string;
-      insights: string;
-      resolved: boolean;
-      screenshot_path: string;
-      scan_start_ts: number;
-      scan_end_ts: number;
-      error: boolean;
-    }
+    // interface BolsterInfo {
+    //   job_id: string;
+    //   status: 'PENDING' | 'DONE';
+    //   url: string;
+    //   url_sha256: string;
+    //   disposition:
+    //     | 'phish'
+    //     | 'scam'
+    //     | 'adult'
+    //     | 'drug_spam'
+    //     | 'gambling'
+    //     | 'suspicious'
+    //     | 'likely_phish'
+    //     | 'cryptojacking'
+    //     | 'streaming'
+    //     | 'hacked_website'
+    //     | 'mortgage'
+    //     | 'clean';
+    //   brand: string;
+    //   insights: string;
+    //   resolved: boolean;
+    //   screenshot_path: string;
+    //   scan_start_ts: number;
+    //   scan_end_ts: number;
+    //   error: boolean;
+    // }
 
     if (urlMatch) {
       this.client.sendReadReceipt(roomId, event.eventId);
@@ -268,57 +268,96 @@ export default class CommandHandler {
           return warnMatrix(this.client, url, 'phish', 1, transactionId);
         LogService.info('url-scan', `URL not marked as problematic from method 1, continuing... | ${transactionId}`);
 
-        const bolsterJobBody = {
-          apiKey: process.env.BOLSTER_TOKEN,
-          urlInfo: {
-            url: url
-          },
-          scanType: 'full'
-        };
+        // const bolsterJobBody = {
+        //   apiKey: process.env.BOLSTER_TOKEN,
+        //   urlInfo: {
+        //     url: url
+        //   },
+        //   scanType: 'full'
+        // };
 
-        const bolsterJob = await fetch('https://developers.bolster.ai/api/neo/scan', {
-          method: 'POST',
-          body: JSON.stringify(bolsterJobBody),
-          headers: {
-            'Content-Type': 'application/json'
-          }
-        });
-        if (!bolsterJob.ok) continue;
-        const bolsterJobOutput: BolsterJob = await bolsterJob
-          .json()
-          .catch(e => LogService.error('url-scan-method-2', e));
+        // const bolsterJob = await fetch('https://developers.bolster.ai/api/neo/scan', {
+        //   method: 'POST',
+        //   body: JSON.stringify(bolsterJobBody),
+        //   headers: {
+        //     'Content-Type': 'application/json'
+        //   }
+        // });
+        // if (!bolsterJob.ok) continue;
+        // const bolsterJobOutput2 = bolsterJob.clone();
+        // const bolsterJobOutput: BolsterJob = await bolsterJob
+        //   .json()
+        //   .then(json => {
+        //     try {
+        //       // here we check json is not an object
+        //       return typeof json === 'object' ? json : JSON.parse(json);
+        //     } catch (error) {
+        //       // this drives you the Promise catch
+        //       throw error;
+        //     }
+        //   })
+        //   .catch(() => {
+        //     return bolsterJobOutput2
+        //       .text()
+        //       .then(
+        //         txt =>
+        //           `Response was not OK. Status code: ${bolsterJobOutput2.status} text: ${bolsterJobOutput2.statusText}.\nResponse: ${txt}`
+        //       );
+        //     //this error will be capture by your last .catch()
+        //   });
 
-        if (bolsterJobOutput.jobID) {
-          const bolsterBody = {
-            apiKey: process.env.BOLSTER_TOKEN,
-            jobID: bolsterJobOutput.jobID,
-            insights: true
-          };
-          async function checkJob(client: MatrixClient) {
-            const bolster = await fetch('https://developers.bolster.ai/api/neo/scan/status', {
-              method: 'POST',
-              body: JSON.stringify(bolsterBody),
-              headers: {
-                'Content-Type': 'application/json'
-              }
-            });
-            const bolsterInfo: BolsterInfo = await bolster.json().catch(e => LogService.error('url-scan-method-2', e));
-            if (bolsterInfo.status.toLowerCase() === 'done') {
-              if (bolsterInfo.disposition === 'clean')
-                return LogService.info(
-                  'url-scan',
-                  `URL marked as clean by method 2. Scan completed. | ${transactionId}`
-                );
+        // if (bolsterJobOutput.jobID) {
+        //   const bolsterBody = {
+        //     apiKey: process.env.BOLSTER_TOKEN,
+        //     jobID: bolsterJobOutput.jobID,
+        //     insights: true
+        //   };
+        //   async function checkJob(client: MatrixClient) {
+        //     const bolster = await fetch('https://developers.bolster.ai/api/neo/scan/status', {
+        //       method: 'POST',
+        //       body: JSON.stringify(bolsterBody),
+        //       headers: {
+        //         'Content-Type': 'application/json'
+        //       }
+        //     });
+        //     const bolsterInfo2 = bolster.clone();
+        //     const bolsterInfo: BolsterInfo = await bolster
+        //       .json()
+        //       .then(json => {
+        //         try {
+        //           // here we check json is not an object
+        //           return typeof json === 'object' ? json : JSON.parse(json);
+        //         } catch (error) {
+        //           // this drives you the Promise catch
+        //           throw error;
+        //         }
+        //       })
+        //       .catch(() => {
+        //         return bolsterInfo2
+        //           .text()
+        //           .then(
+        //             txt =>
+        //               `Response was not OK. Status code: ${bolsterInfo2.status} text: ${bolsterInfo2.statusText}.\nResponse: ${txt}`
+        //           );
+        //         //this error will be capture by your last .catch()
+        //       });
+        //     console.log(bolsterInfo);
+        //     if (bolsterInfo.status.toLowerCase() === 'done') {
+        //       if (bolsterInfo.disposition === 'clean')
+        //         return LogService.info(
+        //           'url-scan',
+        //           `URL marked as clean by method 2. Scan completed. | ${transactionId}`
+        //         );
 
-              return warnMatrix(client, url, bolsterInfo.disposition, 2, transactionId);
-            } else if (bolsterInfo.status.toLowerCase() !== 'done' && bolsterInfo.status !== undefined) {
-              return setTimeout(async () => {
-                await checkJob(client);
-              }, 1000);
-            } else return;
-          }
-          await checkJob(this.client);
-        }
+        //       return warnMatrix(client, url, bolsterInfo.disposition, 2, transactionId);
+        //     } else if (bolsterInfo.status.toLowerCase() !== 'done' && bolsterInfo.status !== undefined) {
+        //       return setTimeout(async () => {
+        //         await checkJob(client);
+        //       }, 1000);
+        //     } else return;
+        //   }
+        //   await checkJob(this.client);
+        // }
       }
     }
 
