@@ -4,5 +4,5 @@
     "autoJoin": true,
     "dataPath": "dist/storage",
     "developerMode": false,
-    "encryption": true
+    "encryption": false
 }
