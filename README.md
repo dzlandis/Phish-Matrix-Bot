@@ -14,7 +14,7 @@ Phish Bot is a [Matrix](https://matrix.org) bot that detects phishing/malicious 
 
 ## Inviting 
 
-Invite `@phishbot:matrix.org` to the room.
+Invite [`@phishbot:matrix.org`](https://matrix.to/#/@phishbot:matrix.org) to the room.
 
 > **Warning**
 >
