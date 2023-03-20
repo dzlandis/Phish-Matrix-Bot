@@ -1,0 +1,18 @@
+{
+    "extends": "@sapphire/ts-config/extra-strict",
+    "compileOnSave": false,
+    "compilerOptions": {
+      "declaration": false,
+      "declarationMap": false,
+      "module": "ESNext",
+      "noImplicitReturns": false,
+      "outDir": "./dist",
+      "removeComments": true,
+      "sourceMap": false,
+      "skipLibCheck": true,
+      "target": "ESNext",
+      "lib": ["ESNext", "DOM", "WebWorker.ImportScripts", "ScriptHost", "DOM.Iterable"],
+    },
+    "include": ["src/**/*"]
+  }
+  
