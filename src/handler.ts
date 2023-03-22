@@ -260,7 +260,8 @@ export default class CommandHandler {
           url.toLowerCase().startsWith('https://www.sec.gov/') ||
           url.toLowerCase().startsWith('https://github.com/') ||
           url.toLowerCase().startsWith('https://gitlab.com/') ||
-          url.toLowerCase().startsWith('https://tenor.com/')
+          url.toLowerCase().startsWith('https://tenor.com/') ||
+          url.toLowerCase().startsWith('ipfs.io')
         )
           continue;
 
