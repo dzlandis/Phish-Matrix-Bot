@@ -81,10 +81,11 @@ export default class CommandHandler {
     const prefixUsed = prefixes.find(p => event.textBody.startsWith(p));
 
     const text = removeMd(event.textBody);
-
-    const urlMatch = text.match(
+    const urlRegex = RegExp(
       /(?<http>(?:(?:[a-z]{4,5}:)?\/\/))?(?:\S+(?:\S*)?@)?(?<domain>(?:25[0-5]|2[0-4]\d|1\d\d|[1-9]\d|\d)(?:\.(?:25[0-5]|2[0-4]\d|1\d\d|[1-9]\d|\d)){3}|(?<sub>(?:[a-z\u00a1-\uffff0-9-_]+\.)*)?(?<base>[a-z\u00a1-\uffff0-9-_]+\.)+(?:(?<TLD>[a-z\u00a1-\uffff]{2,})))(?::\d{2,5})?(?<path>[/?#][^\s"]*)?|(?<tldOnly>(?:(?:[a-z]{4,5}:)?\/\/)[a-z\u00a1-\uffff0-9-_]+)/g
     ); // regex courtesy of user#6969 (212795145639165952) on Discord
+    const urlMatch = text.match(urlRegex);
+    const urlGroups = Array.from(text.matchAll(urlRegex), m => m.groups);
 
     async function warnMatrix(
       client: MatrixClient,
@@ -101,7 +102,7 @@ export default class CommandHandler {
         | 'streaming'
         | 'hacked_website'
         | 'mortgage',
-      detectionMethod: number,
+      detectionMethod: string | number,
       transactionId: string
     ) {
       let scamTypeRewritten;
@@ -164,13 +165,15 @@ export default class CommandHandler {
         }
 
         if (!permissionToDelete) {
-          await client.sendEvent(roomId, 'm.reaction', {
-            'm.relates_to': {
-              event_id: event.eventId,
-              key: `🚨 ${scam} 🚨`,
-              rel_type: 'm.annotation'
-            }
-          });
+          await client
+            .sendEvent(roomId, 'm.reaction', {
+              'm.relates_to': {
+                event_id: event.eventId,
+                key: `🚨 ${scam} 🚨`,
+                rel_type: 'm.annotation'
+              }
+            })
+            .catch(() => null);
 
           if (isThread && permissionToSendMessage)
             await client.sendMessage(roomId, {
@@ -249,131 +252,157 @@ export default class CommandHandler {
 
     if (urlMatch) {
       this.client.sendReadReceipt(roomId, event.eventId);
-      for (const url of urlMatch) {
-        if (
-          url.toLowerCase().startsWith('https://matrix.org/') ||
-          url.toLowerCase().startsWith('https://matrix.to/') ||
-          url.toLowerCase().startsWith('https://spec.matrix.org/') ||
-          url.toLowerCase().startsWith('https://view.matrix.org/') ||
-          url.toLowerCase().startsWith('https://t.me/') ||
-          url.toLowerCase().startsWith('https://www.youtube.com/') ||
-          url.toLowerCase().startsWith('https://www.sec.gov/') ||
-          url.toLowerCase().startsWith('https://github.com/') ||
-          url.toLowerCase().startsWith('https://gitlab.com/') ||
-          url.toLowerCase().startsWith('https://tenor.com/') ||
-          url.toLowerCase().startsWith('ipfs.io')
-        )
-          continue;
-
+      for (const group of urlGroups) {
+        if (!group?.domain) continue;
+        const domain = group.domain;
         const transactionId = uuid();
         LogService.info('url-scan', `URL Found! Scanning... | ${transactionId}`);
-        const antiFishBody = { message: url };
 
-        const antiFish = await fetch('https://anti-fish.bitflow.dev/check', {
-          method: 'POST',
-          body: JSON.stringify(antiFishBody),
+        const fishfish = await fetch(`https://api.fishfish.gg/v1/domains/${domain}`, {
+          method: 'GET',
           headers: {
             'User-Agent': 'Phish Bot (@phishbot:matrix.org)',
             'Content-Type': 'application/json'
           }
         });
+        if (!fishfish.ok) continue;
 
-        const antiFishOutput = await antiFish.json().catch(e => LogService.error('url-scan-method-1', e));
-        if (antiFishOutput && antiFishOutput.match === true)
-          return warnMatrix(this.client, url, 'phish', 1, transactionId);
-        LogService.info('url-scan', `URL not marked as problematic from method 1, continuing... | ${transactionId}`);
-
-        // const bolsterJobBody = {
-        //   apiKey: process.env.BOLSTER_TOKEN,
-        //   urlInfo: {
-        //     url: url
-        //   },
-        //   scanType: 'full'
-        // };
-
-        // const bolsterJob = await fetch('https://developers.bolster.ai/api/neo/scan', {
-        //   method: 'POST',
-        //   body: JSON.stringify(bolsterJobBody),
-        //   headers: {
-        //     'Content-Type': 'application/json'
-        //   }
-        // });
-        // if (!bolsterJob.ok) continue;
-        // const bolsterJobOutput2 = bolsterJob.clone();
-        // const bolsterJobOutput: BolsterJob = await bolsterJob
-        //   .json()
-        //   .then(json => {
-        //     try {
-        //       // here we check json is not an object
-        //       return typeof json === 'object' ? json : JSON.parse(json);
-        //     } catch (error) {
-        //       // this drives you the Promise catch
-        //       throw error;
-        //     }
-        //   })
-        //   .catch(() => {
-        //     return bolsterJobOutput2
-        //       .text()
-        //       .then(
-        //         txt =>
-        //           `Response was not OK. Status code: ${bolsterJobOutput2.status} text: ${bolsterJobOutput2.statusText}.\nResponse: ${txt}`
-        //       );
-        //     //this error will be capture by your last .catch()
-        //   });
-
-        // if (bolsterJobOutput.jobID) {
-        //   const bolsterBody = {
-        //     apiKey: process.env.BOLSTER_TOKEN,
-        //     jobID: bolsterJobOutput.jobID,
-        //     insights: true
-        //   };
-        //   async function checkJob(client: MatrixClient) {
-        //     const bolster = await fetch('https://developers.bolster.ai/api/neo/scan/status', {
-        //       method: 'POST',
-        //       body: JSON.stringify(bolsterBody),
-        //       headers: {
-        //         'Content-Type': 'application/json'
-        //       }
-        //     });
-        //     const bolsterInfo2 = bolster.clone();
-        //     const bolsterInfo: BolsterInfo = await bolster
-        //       .json()
-        //       .then(json => {
-        //         try {
-        //           // here we check json is not an object
-        //           return typeof json === 'object' ? json : JSON.parse(json);
-        //         } catch (error) {
-        //           // this drives you the Promise catch
-        //           throw error;
-        //         }
-        //       })
-        //       .catch(() => {
-        //         return bolsterInfo2
-        //           .text()
-        //           .then(
-        //             txt =>
-        //               `Response was not OK. Status code: ${bolsterInfo2.status} text: ${bolsterInfo2.statusText}.\nResponse: ${txt}`
-        //           );
-        //         //this error will be capture by your last .catch()
-        //       });
-        //     console.log(bolsterInfo);
-        //     if (bolsterInfo.status.toLowerCase() === 'done') {
-        //       if (bolsterInfo.disposition === 'clean')
-        //         return LogService.info(
-        //           'url-scan',
-        //           `URL marked as clean by method 2. Scan completed. | ${transactionId}`
-        //         );
-
-        //       return warnMatrix(client, url, bolsterInfo.disposition, 2, transactionId);
-        //     } else if (bolsterInfo.status.toLowerCase() !== 'done' && bolsterInfo.status !== undefined) {
-        //       return setTimeout(async () => {
-        //         await checkJob(client);
-        //       }, 1000);
-        //     } else return;
-        //   }
-        //   await checkJob(this.client);
-        // }
+        const fishfishOutput = await fishfish.json();
+        if (fishfishOutput.category.toLowerCase() === 'phishing') {
+          return warnMatrix(this.client, domain, 'phish', 'FishFish', transactionId);
+        }
+        LogService.info('url-scan', `URL not marked as problematic | ${transactionId}`);
       }
+
+      // Old phishing detection
+      // for (const url of urlMatch) {
+      //   if (
+      //     url.toLowerCase().startsWith('https://matrix.org/') ||
+      //     url.toLowerCase().startsWith('https://matrix.to/') ||
+      //     url.toLowerCase().startsWith('https://spec.matrix.org/') ||
+      //     url.toLowerCase().startsWith('https://view.matrix.org/') ||
+      //     url.toLowerCase().startsWith('https://t.me/') ||
+      //     url.toLowerCase().startsWith('https://www.youtube.com/') ||
+      //     url.toLowerCase().startsWith('https://youtu.be/') ||
+      //     url.toLowerCase().startsWith('https://www.sec.gov/') ||
+      //     url.toLowerCase().startsWith('https://github.com/') ||
+      //     url.toLowerCase().startsWith('https://gitlab.com/') ||
+      //     url.toLowerCase().startsWith('https://tenor.com/') ||
+      //     url.toLowerCase().startsWith('ipfs.io')
+      //   )
+      //     continue;
+
+      //   const transactionId = uuid();
+      //   LogService.info('url-scan', `URL Found! Scanning... | ${transactionId}`);
+
+      //   const antiFishBody = { message: url };
+
+      //   const antiFish = await fetch('https://anti-fish.bitflow.dev/check', {
+      //     method: 'POST',
+      //     body: JSON.stringify(antiFishBody),
+      //     headers: {
+      //       'User-Agent': 'Phish Bot (@phishbot:matrix.org)',
+      //       'Content-Type': 'application/json'
+      //     }
+      //   });
+
+      //   const antiFishOutput = await antiFish.json().catch(e => LogService.error('url-scan-method-1', e));
+      //   if (antiFishOutput && antiFishOutput.match === true) {
+      //     return warnMatrix(this.client, url, 'phish', 1, transactionId);
+      //   }
+      //   LogService.info('url-scan', `URL not marked as problematic from method 1, continuing... | ${transactionId}`);
+
+      // const bolsterJobBody = {
+      //   apiKey: process.env.BOLSTER_TOKEN,
+      //   urlInfo: {
+      //     url: url
+      //   },
+      //   scanType: 'full'
+      // };
+
+      // const bolsterJob = await fetch('https://developers.bolster.ai/api/neo/scan', {
+      //   method: 'POST',
+      //   body: JSON.stringify(bolsterJobBody),
+      //   headers: {
+      //     'Content-Type': 'application/json'
+      //   }
+      // });
+      // if (!bolsterJob.ok) continue;
+      // const bolsterJobOutput2 = bolsterJob.clone();
+      // const bolsterJobOutput: BolsterJob = await bolsterJob
+      //   .json()
+      //   .then(json => {
+      //     try {
+      //       // here we check json is not an object
+      //       return typeof json === 'object' ? json : JSON.parse(json);
+      //     } catch (error) {
+      //       // this drives you the Promise catch
+      //       throw error;
+      //     }
+      //   })
+      //   .catch(() => {
+      //     return bolsterJobOutput2
+      //       .text()
+      //       .then(
+      //         txt =>
+      //           `Response was not OK. Status code: ${bolsterJobOutput2.status} text: ${bolsterJobOutput2.statusText}.\nResponse: ${txt}`
+      //       );
+      //     //this error will be capture by your last .catch()
+      //   });
+
+      // if (bolsterJobOutput.jobID) {
+      //   const bolsterBody = {
+      //     apiKey: process.env.BOLSTER_TOKEN,
+      //     jobID: bolsterJobOutput.jobID,
+      //     insights: true
+      //   };
+      //   async function checkJob(client: MatrixClient) {
+      //     const bolster = await fetch('https://developers.bolster.ai/api/neo/scan/status', {
+      //       method: 'POST',
+      //       body: JSON.stringify(bolsterBody),
+      //       headers: {
+      //         'Content-Type': 'application/json'
+      //       }
+      //     });
+      //     const bolsterInfo2 = bolster.clone();
+      //     const bolsterInfo: BolsterInfo = await bolster
+      //       .json()
+      //       .then(json => {
+      //         try {
+      //           // here we check json is not an object
+      //           return typeof json === 'object' ? json : JSON.parse(json);
+      //         } catch (error) {
+      //           // this drives you the Promise catch
+      //           throw error;
+      //         }
+      //       })
+      //       .catch(() => {
+      //         return bolsterInfo2
+      //           .text()
+      //           .then(
+      //             txt =>
+      //               `Response was not OK. Status code: ${bolsterInfo2.status} text: ${bolsterInfo2.statusText}.\nResponse: ${txt}`
+      //           );
+      //         //this error will be capture by your last .catch()
+      //       });
+      //     console.log(bolsterInfo);
+      //     if (bolsterInfo.status.toLowerCase() === 'done') {
+      //       if (bolsterInfo.disposition === 'clean')
+      //         return LogService.info(
+      //           'url-scan',
+      //           `URL marked as clean by method 2. Scan completed. | ${transactionId}`
+      //         );
+
+      //       return warnMatrix(client, url, bolsterInfo.disposition, 2, transactionId);
+      //     } else if (bolsterInfo.status.toLowerCase() !== 'done' && bolsterInfo.status !== undefined) {
+      //       return setTimeout(async () => {
+      //         await checkJob(client);
+      //       }, 1000);
+      //     } else return;
+      //   }
+      //   await checkJob(this.client);
+      // }
+      // }
     }
 
     if (!prefixUsed) return; // Not a command (as far as we're concerned)
