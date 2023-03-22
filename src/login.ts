@@ -8,8 +8,11 @@ const username = '';
 
 const auth = new MatrixAuth(homeserverUrl);
 
-const client = await auth.passwordLogin(username, password);
-const user = await client.getUserId();
-const accessToken = client.accessToken;
-LogService.info('login', `Logged in as ${user}`);
-LogService.info('login', `Access token: ${accessToken}`);
+(async function () {
+  const client = await auth.passwordLogin(username, password);
+  const user = await client.getUserId();
+  console.log(user);
+  const accessToken = client.accessToken;
+  LogService.info('login', `Logged in as ${user}`);
+  LogService.info('login', `Access token: ${accessToken}`);
+})();
