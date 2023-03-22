@@ -9,6 +9,7 @@ import {
 } from 'matrix-bot-sdk';
 import removeMd from 'remove-markdown';
 import { v4 as uuid } from 'uuid';
+import { runHelpCommand } from './commands/help.js';
 import { runPingCommand } from './commands/ping.js';
 import { runSpaceCommand } from './commands/space.js';
 import config from './lib/config.js';
@@ -415,6 +416,9 @@ export default class CommandHandler {
       if (args[0] === 'ping' && permissionToSendMessage) return runPingCommand(roomId, event, this.client);
       else if (['space', 'support', 'room'].includes(args[0]) && permissionToSendMessage)
         return runSpaceCommand(roomId, event, this.client);
+      else if (args[0] === 'help' && permissionToSendMessage) {
+        return runHelpCommand(roomId, event, this.client);
+      }
     } catch (e) {
       // Log the error
       LogService.error('CommandHandler', e);
