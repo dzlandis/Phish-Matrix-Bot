@@ -1,6 +1,7 @@
 {
     "homeserverUrl": "https://matrix.org",
     "phishDetectedLogRoom": "!pvNhEnZoEQAvudegVA:matrix.org",
+    "prefix": "!phish",
     "autoJoin": true,
     "dataPath": "dist/storage",
     "developerMode": false,

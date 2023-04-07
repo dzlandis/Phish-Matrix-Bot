@@ -16,7 +16,7 @@ import config from './lib/config.js';
 
 // The prefix required to trigger the bot. The bot will also respond
 // to being pinged directly.
-export const COMMAND_PREFIX = '!phish';
+export const COMMAND_PREFIX = config.prefix ?? '!phish';
 
 // This is where all of our commands will be handled
 export default class CommandHandler {

@@ -11,6 +11,7 @@ declare module '@skyra/env-utilities' {
 interface IConfig {
   homeserverUrl: string;
   phishDetectedLogRoom: string;
+  prefix: string;
   autoJoin: boolean;
   dataPath: string;
   developerMode: boolean;
