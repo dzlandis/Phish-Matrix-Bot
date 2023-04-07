@@ -176,8 +176,9 @@ export default class CommandHandler {
             })
             .catch(() => null);
 
+          let messageId;
           if (isThread && permissionToSendMessage)
-            await client.sendMessage(roomId, {
+            messageId = await client.sendMessage(roomId, {
               msgtype: 'm.notice',
               body: `🚨 ${scam} LINK DETECTED 🚨\n\nA MESSAGE HAS BEEN DETECTED TO CONTAIN A PROBLEMATIC LINK. WE RECOMMEND NOT PRESSING ANY LINKS WITHIN THE MESSAGE.\n\nIF THIS IS A FALSE POSITIVE, PLEASE LET US KNOW BY JOINING OUR SUPPORT SERVER THROUGH THE COMMAND !PHISH SUPPORT`,
               format: 'org.matrix.custom.html',
@@ -188,34 +189,55 @@ export default class CommandHandler {
               }
             });
           else if (permissionToSendMessage)
-            await client.sendHtmlNotice(
+            messageId = await client.sendHtmlNotice(
               roomId,
               `<h4>🚨 ${scam} Link Detected 🚨</h4><h5>A message has been detected to contain a problematic link. We recommend not pressing any links within the message.</h5><h6>If this is a false positive, please let us know by joining our support server through the command <code>${COMMAND_PREFIX} support</code></h6>`
             );
           action.push('Warn');
+          await client
+            .sendEvent(roomId, 'm.reaction', {
+              'm.relates_to': {
+                event_id: messageId,
+                key: `👍`,
+                rel_type: 'm.annotation'
+              }
+            })
+            .catch(() => null);
+          await client
+            .sendEvent(roomId, 'm.reaction', {
+              'm.relates_to': {
+                event_id: messageId,
+                key: `👎`,
+                rel_type: 'm.annotation'
+              }
+            })
+            .catch(() => null);
         }
       }
 
       client.setTyping(roomId, false);
 
-      client.setTyping(config.phishDetectedLogRoom, true);
-      await client
-        .sendMessage(config.phishDetectedLogRoom, {
-          body: `**${scam} Link Detected**\n\nRoom: [${roomId}](https://matrix.to/#/${roomId}/${
-            event.eventId
-          })\nSent By: ${event.sender}\nAction: ${action.join(', ')}\nLink: \`${url}\``,
-          msgtype: 'm.notice',
-          format: 'org.matrix.custom.html',
-          formatted_body: `<b>Phishing Link Detected</b><br><table><tr><th>Room</th><th>Sent By</th><th>Action</th><th>Link</th><th>Detection Method</th><th>Message</th></tr><tr><td><a href=https://matrix.to/#/${roomId}/${
-            event.eventId
-          }>${roomId}</a></td><td>${event.sender}</td><td>${action.join(
-            ', '
-          )}</td><td><code>${url}</code></td><td>${detectionMethod}</td><td><code>${
-            event.textBody
-          }</code></td></tr></table>`
-        })
-        .catch(() => null);
-      client.setTyping(config.phishDetectedLogRoom, false);
+      const joinedRooms = await client.getJoinedRooms();
+      if (joinedRooms.includes(config.phishDetectedLogRoom)) {
+        client.setTyping(config.phishDetectedLogRoom, true);
+        await client
+          .sendMessage(config.phishDetectedLogRoom, {
+            body: `**${scam} Link Detected**\n\nRoom: [${roomId}](https://matrix.to/#/${roomId}/${
+              event.eventId
+            })\nSent By: ${event.sender}\nAction: ${action.join(', ')}\nLink: \`${url}\``,
+            msgtype: 'm.notice',
+            format: 'org.matrix.custom.html',
+            formatted_body: `<b>Phishing Link Detected</b><br><table><tr><th>Room</th><th>Sent By</th><th>Action</th><th>Link</th><th>Detection Method</th><th>Message</th></tr><tr><td><a href=https://matrix.to/#/${roomId}/${
+              event.eventId
+            }>${roomId}</a></td><td>${event.sender}</td><td>${action.join(
+              ', '
+            )}</td><td><code>${url}</code></td><td>${detectionMethod}</td><td><code>${
+              event.textBody
+            }</code></td></tr></table>`
+          })
+          .catch(() => null);
+        client.setTyping(config.phishDetectedLogRoom, false);
+      } else LogService.warn('url-scan', 'Phishing not sent to Phishing Detection Room');
       LogService.info('url-scan', `Matrix Warn Complete | ${transactionId}`);
     }
 
@@ -256,8 +278,22 @@ export default class CommandHandler {
       for (const group of urlGroups) {
         if (!group?.domain) continue;
         const domain = group.domain;
+        if (
+          domain.toLowerCase().startsWith('https://matrix.org/') ||
+          domain.toLowerCase().startsWith('https://matrix.to/') ||
+          domain.toLowerCase().startsWith('https://spec.matrix.org/') ||
+          domain.toLowerCase().startsWith('https://view.matrix.org/') ||
+          domain.toLowerCase().startsWith('https://t.me/') ||
+          domain.toLowerCase().startsWith('https://www.youtube.com/') ||
+          domain.toLowerCase().startsWith('https://youtu.be/') ||
+          domain.toLowerCase().startsWith('https://www.sec.gov/') ||
+          domain.toLowerCase().startsWith('https://github.com/') ||
+          domain.toLowerCase().startsWith('https://gitlab.com/') ||
+          domain.toLowerCase().startsWith('https://tenor.com/')
+        )
+          continue;
         const transactionId = uuid();
-        LogService.info('url-scan', `URL Found! Scanning... | ${transactionId}`);
+        LogService.info('url-scan', `URL Found! Scanning... | ${domain} | ${transactionId}`);
 
         const fishfish = await fetch(`https://api.fishfish.gg/v1/domains/${domain}`, {
           method: 'GET',
@@ -266,13 +302,33 @@ export default class CommandHandler {
             'Content-Type': 'application/json'
           }
         });
-        if (!fishfish.ok) continue;
-
-        const fishfishOutput = await fishfish.json();
-        if (fishfishOutput.category.toLowerCase() === 'phishing') {
-          return warnMatrix(this.client, domain, 'phish', 'FishFish', transactionId);
+        if (fishfish.ok) {
+          const fishfishOutput = await fishfish.json();
+          if (fishfishOutput.category.toLowerCase() === 'phishing') {
+            return warnMatrix(this.client, domain, 'phish', 'FishFish', transactionId);
+          }
+          LogService.info('url-scan', `URL not marked as problematic by FishFish | ${domain} | ${transactionId}`);
         }
-        LogService.info('url-scan', `URL not marked as problematic | ${transactionId}`);
+
+        const antiFishBody = { message: domain };
+
+        const antiFish = await fetch('https://anti-fish.bitflow.dev/check', {
+          method: 'POST',
+          body: JSON.stringify(antiFishBody),
+          headers: {
+            'User-Agent': 'Phish Bot (@phishbot:matrix.org)',
+            'Content-Type': 'application/json'
+          }
+        });
+
+        const antiFishOutput = await antiFish.json().catch(e => LogService.error('url-scan-method-1', e));
+        if (antiFishOutput && antiFishOutput.match === true) {
+          return warnMatrix(this.client, domain, 'phish', 'AntiFish', transactionId);
+        }
+        LogService.info(
+          'url-scan',
+          `URL not marked as problematic by AntiFish, URL scan completed | ${domain} | ${transactionId}`
+        );
       }
 
       // Old phishing detection
