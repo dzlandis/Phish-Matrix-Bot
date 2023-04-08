@@ -279,17 +279,17 @@ export default class CommandHandler {
         if (!group?.domain) continue;
         const domain = group.domain;
         if (
-          domain.toLowerCase().startsWith('https://matrix.org/') ||
-          domain.toLowerCase().startsWith('https://matrix.to/') ||
-          domain.toLowerCase().startsWith('https://spec.matrix.org/') ||
-          domain.toLowerCase().startsWith('https://view.matrix.org/') ||
-          domain.toLowerCase().startsWith('https://t.me/') ||
-          domain.toLowerCase().startsWith('https://www.youtube.com/') ||
-          domain.toLowerCase().startsWith('https://youtu.be/') ||
-          domain.toLowerCase().startsWith('https://www.sec.gov/') ||
-          domain.toLowerCase().startsWith('https://github.com/') ||
-          domain.toLowerCase().startsWith('https://gitlab.com/') ||
-          domain.toLowerCase().startsWith('https://tenor.com/')
+          domain.toLowerCase() === 'matrix.org' ||
+          domain.toLowerCase() === 'matrix.to' ||
+          domain.toLowerCase() === 'spec.matrix.org' ||
+          domain.toLowerCase() === 'view.matrix.org' ||
+          domain.toLowerCase() === 't.me' ||
+          domain.toLowerCase() === 'youtube.com' ||
+          domain.toLowerCase() === 'youtu.be' ||
+          domain.toLowerCase() === 'sec.gov' ||
+          domain.toLowerCase() === 'github.com' ||
+          domain.toLowerCase() === 'gitlab.com' ||
+          domain.toLowerCase() === 'tenor.com'
         )
           continue;
         const transactionId = uuid();
