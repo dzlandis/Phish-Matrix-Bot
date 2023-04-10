@@ -1,6 +1,6 @@
 # Phish Bot ([Matrix](https://matrix.org) Bot) 🐟
 
-Phish Bot is a [Matrix](https://matrix.org) bot that detects phishing/malicious links sent in your chat rooms and notifies users that they are malicious.
+Phish Bot is a [Matrix](https://matrix.org) bot that detects phishing/malicious links sent in your chat rooms and notifies users that the links are malicious.
 
 ![Phish Bot Demo (Phish Bot sending a warning after a user sent a phishing link)](https://i.imgur.com/bmbBlOc.gif)
 
