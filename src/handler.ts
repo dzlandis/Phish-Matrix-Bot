@@ -232,10 +232,12 @@ export default class CommandHandler {
           .sendMessage(config.phishDetectedLogRoom, {
             body: `**${scam} Link Detected**\n\nRoom: [${roomId}](https://matrix.to/#/${roomId}/${
               event.eventId
-            })\nSent By: ${event.sender}\nAction: ${action.join(', ')}\nLink: \`${url}\``,
+            })\nSent By: ${event.sender}\nAction: ${action.join(
+              ', '
+            )}\nDetection Method:${detectionMethod}\n Message: ${event.textBody}\nLink: \`${url}\``,
             msgtype: 'm.notice',
             format: 'org.matrix.custom.html',
-            formatted_body: `<b>Phishing Link Detected</b><br><table><tr><th>Room</th><th>Sent By</th><th>Action</th><th>Link</th><th>Detection Method</th><th>Message</th></tr><tr><td><a href=https://matrix.to/#/${roomId}/${
+            formatted_body: `<b>${scam} Link Detected</b><br><table><tr><th>Room</th><th>Sent By</th><th>Action</th><th>Link</th><th>Detection Method</th><th>Message</th></tr><tr><td><a href=https://matrix.to/#/${roomId}/${
               event.eventId
             }>${roomId}</a></td><td>${event.sender}</td><td>${action.join(
               ', '
