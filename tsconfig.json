@@ -12,6 +12,7 @@
       "skipLibCheck": true,
       "target": "ESNext",
       "lib": ["ESNext", "DOM", "WebWorker.ImportScripts", "ScriptHost", "DOM.Iterable"],
+      "ignoreDeprecations": "5.0"
     },
     "include": ["src/**/*"]
   }
