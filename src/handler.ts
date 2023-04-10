@@ -110,7 +110,8 @@ export default class CommandHandler {
         | 'cryptojacking'
         | 'streaming'
         | 'hacked_website'
-        | 'mortgage',
+        | 'mortgage'
+        | 'telegram',
       detectionMethod: string | number,
       transactionId: string
     ) {
@@ -144,6 +145,11 @@ export default class CommandHandler {
         case 'streaming':
           {
             scamTypeRewritten = 'Illegal';
+          }
+          break;
+        case 'telegram':
+          {
+            scamTypeRewritten = 'Telegram Scam';
           }
           break;
         default: {
@@ -346,7 +352,10 @@ export default class CommandHandler {
                   })
                   .catch(() => null);
               }
-            }
+            } else LogService.warn('telegram', 'Telegram URL not sent to Telegram Logging Room');
+          } else if (maliciousTG && !safeTG) {
+            const transactionId = uuid();
+            return warnMatrix(this.client, domain, 'telegram', 'Telegram Database', transactionId);
           }
           continue;
         }
