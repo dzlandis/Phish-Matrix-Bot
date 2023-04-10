@@ -5,12 +5,15 @@ declare module '@skyra/env-utilities' {
   interface Env {
     ACCESS_TOKEN: string;
     BOLSTER_TOKEN: string;
+    MONGO_URI: string;
   }
 }
 
 interface IConfig {
   homeserverUrl: string;
   phishDetectedLogRoom: string;
+  telegramLogRoom: string;
+  usersWithPerms: string[];
   prefix: string;
   autoJoin: boolean;
   dataPath: string;

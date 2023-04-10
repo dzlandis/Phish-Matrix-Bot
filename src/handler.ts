@@ -5,18 +5,25 @@ import {
   MessageEvent,
   MessageEventContent,
   PowerLevelAction,
+  RoomEvent,
+  RoomEventContent,
   UserID
 } from 'matrix-bot-sdk';
+import mongoose from 'mongoose';
 import removeMd from 'remove-markdown';
 import { v4 as uuid } from 'uuid';
 import { runHelpCommand } from './commands/help.js';
 import { runPingCommand } from './commands/ping.js';
 import { runSpaceCommand } from './commands/space.js';
 import config from './lib/config.js';
+import { model as maliciousTelegramData } from './lib/schemas/maliciousTelegram.js';
+import { model as safeTelegramData } from './lib/schemas/safeTelegram.js';
 
 // The prefix required to trigger the bot. The bot will also respond
 // to being pinged directly.
 export const COMMAND_PREFIX = config.prefix ?? '!phish';
+
+await mongoose.connect(process.env.MONGO_URI);
 
 // This is where all of our commands will be handled
 export default class CommandHandler {
@@ -25,6 +32,9 @@ export default class CommandHandler {
   private displayName: string | undefined;
   private userId: string | undefined;
   private localpart: string | undefined;
+  private urlRegex = RegExp(
+    /(?<http>(?:(?:[a-z]{4,5}:)?\/\/))?(?:\S+(?:\S*)?@)?(?<domain>(?:25[0-5]|2[0-4]\d|1\d\d|[1-9]\d|\d)(?:\.(?:25[0-5]|2[0-4]\d|1\d\d|[1-9]\d|\d)){3}|(?<sub>(?:[a-z\u00a1-\uffff0-9-_]+\.)*)?(?<base>[a-z\u00a1-\uffff0-9-_]+\.)+(?:(?<TLD>[a-z\u00a1-\uffff]{2,})))(?::\d{2,5})?(?<path>[/?#][^\s"]*)?|(?<tldOnly>(?:(?:[a-z]{4,5}:)?\/\/)[a-z\u00a1-\uffff0-9-_]+)/g
+  ); // regex courtesy of user#6969 (212795145639165952) on Discord
 
   constructor(private client: MatrixClient) {}
 
@@ -35,6 +45,7 @@ export default class CommandHandler {
     // Set up the event handler
     this.client.on('room.message', this.onMessage.bind(this));
     this.client.on('room.join', this.onRoomJoin.bind(this));
+    this.client.on('room.event', this.onRoomEvent.bind(this));
   }
 
   private async prepareProfile() {
@@ -82,11 +93,8 @@ export default class CommandHandler {
     const prefixUsed = prefixes.find(p => event.textBody.startsWith(p));
 
     const text = removeMd(event.textBody);
-    const urlRegex = RegExp(
-      /(?<http>(?:(?:[a-z]{4,5}:)?\/\/))?(?:\S+(?:\S*)?@)?(?<domain>(?:25[0-5]|2[0-4]\d|1\d\d|[1-9]\d|\d)(?:\.(?:25[0-5]|2[0-4]\d|1\d\d|[1-9]\d|\d)){3}|(?<sub>(?:[a-z\u00a1-\uffff0-9-_]+\.)*)?(?<base>[a-z\u00a1-\uffff0-9-_]+\.)+(?:(?<TLD>[a-z\u00a1-\uffff]{2,})))(?::\d{2,5})?(?<path>[/?#][^\s"]*)?|(?<tldOnly>(?:(?:[a-z]{4,5}:)?\/\/)[a-z\u00a1-\uffff0-9-_]+)/g
-    ); // regex courtesy of user#6969 (212795145639165952) on Discord
-    const urlMatch = text.match(urlRegex);
-    const urlGroups = Array.from(text.matchAll(urlRegex), m => m.groups);
+    const urlMatch = text.match(this.urlRegex);
+    const urlGroups = Array.from(text.matchAll(this.urlRegex), m => m.groups);
 
     async function warnMatrix(
       client: MatrixClient,
@@ -275,15 +283,77 @@ export default class CommandHandler {
 
     if (urlMatch) {
       this.client.sendReadReceipt(roomId, event.eventId);
+      let i = -1;
       for (const group of urlGroups) {
+        i++;
         if (!group?.domain) continue;
         const domain = group.domain;
+
+        if (domain.toLowerCase() === 't.me') {
+          const telegramId = group.path.slice(1);
+          const safeTG = await safeTelegramData.findOne({
+            id: telegramId
+          });
+
+          const maliciousTG = await maliciousTelegramData.findOne({
+            id: telegramId
+          });
+
+          if (!safeTG && !maliciousTG) {
+            const joinedRooms = await this.client.getJoinedRooms();
+            if (config.telegramLogRoom && joinedRooms.includes(config.telegramLogRoom)) {
+              LogService.info('telegram', `New Telegram URL | ${urlMatch[i]}`);
+              this.client.setTyping(config.telegramLogRoom, true);
+              // LINK MUST BE LAST URL IN MESSAGE
+              const messageId = await this.client
+                .sendMessage(config.telegramLogRoom, {
+                  body: `**New Telegram URL Found**\n\nRoom: [${roomId}](https://matrix.to/#/${roomId}/${event.eventId})\nSent By: ${event.sender}\nMessage: ${event.textBody}\nLink: \`${urlMatch[i]}\``,
+                  msgtype: 'm.notice',
+                  format: 'org.matrix.custom.html',
+                  formatted_body: `<b>New Telegram URL Found</b><br><table><tr><th>Room</th><th>Sent By</th><th>Message</th><th>Link</th></tr><tr><td><a href=https://matrix.to/#/${roomId}/${event.eventId}>${roomId}</a></td><td>${event.sender}</td><td><code>${event.textBody}</code></td><td><code>${urlMatch[i]}</code></td></tr></table>`
+                })
+                .catch(() => null);
+              this.client.setTyping(config.telegramLogRoom, false);
+
+              if (messageId) {
+                await this.client
+                  .sendEvent(roomId, 'm.reaction', {
+                    'm.relates_to': {
+                      event_id: messageId,
+                      key: '✅ Mark Safe',
+                      rel_type: 'm.annotation'
+                    }
+                  })
+                  .catch(() => null);
+                await this.client
+                  .sendEvent(roomId, 'm.reaction', {
+                    'm.relates_to': {
+                      event_id: messageId,
+                      key: '🐟 Mark Scam',
+                      rel_type: 'm.annotation'
+                    }
+                  })
+                  .catch(() => null);
+                await this.client
+                  .sendEvent(roomId, 'm.reaction', {
+                    'm.relates_to': {
+                      event_id: messageId,
+                      key: '🔄 Reset',
+                      rel_type: 'm.annotation'
+                    }
+                  })
+                  .catch(() => null);
+              }
+            }
+          }
+          continue;
+        }
+
         if (
           domain.toLowerCase() === 'matrix.org' ||
           domain.toLowerCase() === 'matrix.to' ||
           domain.toLowerCase() === 'spec.matrix.org' ||
           domain.toLowerCase() === 'view.matrix.org' ||
-          domain.toLowerCase() === 't.me' ||
           domain.toLowerCase() === 'youtube.com' ||
           domain.toLowerCase() === 'youtu.be' ||
           domain.toLowerCase() === 'sec.gov' ||
@@ -497,5 +567,112 @@ export default class CommandHandler {
         roomId,
         `<h1>Hello! 🐟</h1><b>I am a bot created by ${creator.html} that detects phishing/malicious links sent in your chat rooms and notifies users that they are malicious.</b><br>Feel free to join ${phishRoom.html} for questions or concerns. Please kick me if you would not like me here.<br><br>If you would like me to automatically delete phishing messages or kick users who send phishing links, please give me those permissions.<br><br>For more information, please visit: https://github.com/dzlandis/phish-matrix-bot`
       );
+  }
+
+  private async onRoomEvent(roomId: string, ev: any) {
+    if (!config.telegramLogRoom || config.telegramLogRoom !== roomId) return;
+    const event = new RoomEvent(ev);
+    if (event.sender === this.userId) return;
+
+    if (!config.usersWithPerms.includes(event.sender)) return;
+
+    interface MyMessageEventContent extends RoomEventContent {
+      'm.relates_to'?: {
+        event_id: string;
+        key: string;
+        rel_type: string;
+      };
+    }
+
+    // @ts-ignore
+    const content: MyMessageEventContent = event.content;
+
+    if (event.type === 'm.reaction') {
+      if (content['m.relates_to']) {
+        if (content['m.relates_to'].key.includes('✅')) {
+          const relationEventId = content['m.relates_to'].event_id;
+          const relationEventRaw = await this.client.getEvent(roomId, relationEventId);
+          const relationEvent = new MessageEvent(relationEventRaw);
+          const text = removeMd(relationEvent.textBody);
+          const urlGroups = Array.from(text.matchAll(this.urlRegex), m => m.groups);
+          const telegramGroup = urlGroups[urlGroups.length - 1];
+          if (telegramGroup?.domain === 't.me') {
+            const telegramId = telegramGroup.path.slice(1);
+            const safeTG = await safeTelegramData.findOne({
+              id: telegramId
+            });
+            if (safeTG?.id) return;
+
+            const maliciousTG = await maliciousTelegramData.findOne({
+              id: telegramId
+            });
+            if (maliciousTG?.id) {
+              maliciousTG.deleteOne();
+            }
+
+            const newData = new safeTelegramData({
+              id: telegramId,
+              date: Date.now()
+            });
+            await newData.save();
+            return LogService.info('telegram', `Marked Safe | ${telegramId}`);
+          }
+        } else if (content['m.relates_to'].key.includes('🐟')) {
+          const relationEventId = content['m.relates_to'].event_id;
+          const relationEventRaw = await this.client.getEvent(roomId, relationEventId);
+          const relationEvent = new MessageEvent(relationEventRaw);
+          const text = removeMd(relationEvent.textBody);
+          const urlGroups = Array.from(text.matchAll(this.urlRegex), m => m.groups);
+          const telegramGroup = urlGroups[urlGroups.length - 1];
+          if (telegramGroup?.domain === 't.me') {
+            const telegramId = telegramGroup.path.slice(1);
+
+            const maliciousTG = await maliciousTelegramData.findOne({
+              id: telegramId
+            });
+            if (maliciousTG?.id) return;
+
+            const safeTG = await safeTelegramData.findOne({
+              id: telegramId
+            });
+            if (safeTG?.id) {
+              safeTG.deleteOne();
+            }
+
+            const newData = new maliciousTelegramData({
+              id: telegramId,
+              date: Date.now()
+            });
+            await newData.save();
+            return LogService.info('telegram', `Marked Scam | ${telegramId}`);
+          }
+        } else if (content['m.relates_to'].key.includes('🔄')) {
+          const relationEventId = content['m.relates_to'].event_id;
+          const relationEventRaw = await this.client.getEvent(roomId, relationEventId);
+          const relationEvent = new MessageEvent(relationEventRaw);
+          const text = removeMd(relationEvent.textBody);
+          const urlGroups = Array.from(text.matchAll(this.urlRegex), m => m.groups);
+          const telegramGroup = urlGroups[urlGroups.length - 1];
+          if (telegramGroup?.domain === 't.me') {
+            const telegramId = telegramGroup.path.slice(1);
+
+            const maliciousTG = await maliciousTelegramData.findOne({
+              id: telegramId
+            });
+            if (maliciousTG?.id) {
+              maliciousTG.deleteOne();
+            }
+
+            const safeTG = await safeTelegramData.findOne({
+              id: telegramId
+            });
+            if (safeTG?.id) {
+              safeTG.deleteOne();
+            }
+            return LogService.info('telegram', `Reset Data | ${telegramId}`);
+          }
+        }
+      }
+    }
   }
 }

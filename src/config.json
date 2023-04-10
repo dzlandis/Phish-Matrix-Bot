@@ -1,6 +1,8 @@
 {
     "homeserverUrl": "https://matrix.org",
     "phishDetectedLogRoom": "!pvNhEnZoEQAvudegVA:matrix.org",
+    "telegramLogRoom": "!BGtrfJjSiPqRarVNmw:matrix.org",
+    "usersWithPerms": ["@dzlandis:mozilla.org", "@dzlandis:matrix.org"],
     "prefix": "!phish",
     "autoJoin": true,
     "dataPath": "dist/storage",
