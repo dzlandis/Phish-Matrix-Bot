@@ -319,7 +319,7 @@ export default class CommandHandler {
 
               if (messageId) {
                 await this.client
-                  .sendEvent(roomId, 'm.reaction', {
+                  .sendEvent(config.telegramLogRoom, 'm.reaction', {
                     'm.relates_to': {
                       event_id: messageId,
                       key: '✅ Mark Safe',
@@ -328,7 +328,7 @@ export default class CommandHandler {
                   })
                   .catch(() => null);
                 await this.client
-                  .sendEvent(roomId, 'm.reaction', {
+                  .sendEvent(config.telegramLogRoom, 'm.reaction', {
                     'm.relates_to': {
                       event_id: messageId,
                       key: '🐟 Mark Scam',
@@ -337,7 +337,7 @@ export default class CommandHandler {
                   })
                   .catch(() => null);
                 await this.client
-                  .sendEvent(roomId, 'm.reaction', {
+                  .sendEvent(config.telegramLogRoom, 'm.reaction', {
                     'm.relates_to': {
                       event_id: messageId,
                       key: '🔄 Reset',
