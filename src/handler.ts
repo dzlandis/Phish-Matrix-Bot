@@ -370,7 +370,8 @@ export default class CommandHandler {
           domain.toLowerCase() === 'sec.gov' ||
           domain.toLowerCase() === 'github.com' ||
           domain.toLowerCase() === 'gitlab.com' ||
-          domain.toLowerCase() === 'tenor.com'
+          domain.toLowerCase() === 'tenor.com' ||
+          domain.toLowerCase() === 'ipfs.io'
         )
           continue;
         const transactionId = uuid();
