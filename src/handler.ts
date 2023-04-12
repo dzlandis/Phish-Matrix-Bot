@@ -81,6 +81,7 @@ export default class CommandHandler {
 
     const fullContent: MyMessageEventContent = event.content;
     let isThread = false;
+    let repliedEvent: MessageEvent<MessageEventContent> | undefined;
 
     if (fullContent['m.relates_to']?.rel_type === 'm.thread') isThread = true;
 
@@ -92,7 +93,18 @@ export default class CommandHandler {
     const prefixes = [COMMAND_PREFIX, `${this.localpart}:`, `${this.displayName}:`, `${userId}:`];
     const prefixUsed = prefixes.find(p => event.textBody.startsWith(p));
 
-    const text = removeMd(event.textBody);
+    let text: string | undefined;
+
+    if (fullContent['m.relates_to']?.['m.in_reply_to']) {
+      const repliedEventRaw = await this.client.getEvent(
+        roomId,
+        fullContent['m.relates_to']?.['m.in_reply_to'].event_id
+      );
+      repliedEvent = new MessageEvent(repliedEventRaw);
+      text = repliedEvent.content.body;
+    } else text = removeMd(event.textBody);
+
+    if (!text) return;
     const urlMatch = text.match(this.urlRegex);
     const urlGroups = Array.from(text.matchAll(this.urlRegex), m => m.groups);
 
@@ -183,7 +195,7 @@ export default class CommandHandler {
           await client
             .sendEvent(roomId, 'm.reaction', {
               'm.relates_to': {
-                event_id: event.eventId,
+                event_id: repliedEvent ? repliedEvent.eventId : event.eventId,
                 key: `🚨 ${scam} 🚨`,
                 rel_type: 'm.annotation'
               }
@@ -202,7 +214,7 @@ export default class CommandHandler {
                 rel_type: 'm.thread'
               }
             });
-          else if (permissionToSendMessage)
+          else if (permissionToSendMessage && !repliedEvent?.eventId)
             messageId = await client.sendHtmlNotice(
               roomId,
               `<h4>🚨 ${scam} Link Detected 🚨</h4><h5>A message has been detected to contain a problematic link. We recommend not pressing any links within the message.</h5><h6>If this is a false positive, please let us know by joining our support server through the command <code>${COMMAND_PREFIX} support</code></h6>`
@@ -241,17 +253,19 @@ export default class CommandHandler {
           .sendMessage(config.phishDetectedLogRoom, {
             body: `**${scam} Link Detected**\n\nRoom: [${alias}](https://matrix.to/#/${roomId}/${
               event.eventId
-            })\nSent By: ${event.sender}\nAction: ${action.join(
+            })\nSent By: ${repliedEvent ? repliedEvent.sender : event.sender}\nAction: ${action.join(
               ', '
-            )}\nDetection Method:${detectionMethod}\n Message: ${event.textBody}\nLink: \`${url}\``,
+            )}\nDetection Method:${detectionMethod}\n Message: ${
+              repliedEvent ? repliedEvent.textBody : event.textBody
+            }\nLink: \`${url}\``,
             msgtype: 'm.notice',
             format: 'org.matrix.custom.html',
             formatted_body: `<b>${scam} Link Detected</b><br><table><tr><th>Room</th><th>Sent By</th><th>Action</th><th>Link</th><th>Detection Method</th><th>Message</th></tr><tr><td><a href=https://matrix.to/#/${roomId}/${
-              event.eventId
-            }>${alias}</a></td><td>${event.sender}</td><td>${action.join(
+              repliedEvent ? repliedEvent.eventId : event.eventId
+            }>${alias}</a></td><td>${repliedEvent ? repliedEvent.sender : event.sender}</td><td>${action.join(
               ', '
             )}</td><td><code>${url}</code></td><td>${detectionMethod}</td><td><code>${
-              event.textBody
+              repliedEvent ? repliedEvent.textBody : event.textBody
             }</code></td></tr></table>`
           })
           .catch(() => null);
