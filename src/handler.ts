@@ -236,9 +236,9 @@ export default class CommandHandler {
         client.setTyping(config.phishDetectedLogRoom, true);
         await client
           .sendMessage(config.phishDetectedLogRoom, {
-            body: `**${scam} Link Detected**\n\nRoom: [${roomId}](https://matrix.to/#/${roomId}/${
-              event.eventId
-            })\nSent By: ${event.sender}\nAction: ${action.join(
+            body: `**${scam} Link Detected**\n\nRoom: [${client.getPublishedAlias(
+              roomId
+            )}](https://matrix.to/#/${roomId}/${event.eventId})\nSent By: ${event.sender}\nAction: ${action.join(
               ', '
             )}\nDetection Method:${detectionMethod}\n Message: ${event.textBody}\nLink: \`${url}\``,
             msgtype: 'm.notice',
@@ -315,7 +315,11 @@ export default class CommandHandler {
               // LINK MUST BE LAST URL IN MESSAGE
               const messageId = await this.client
                 .sendMessage(config.telegramLogRoom, {
-                  body: `**New Telegram URL Found**\n\nRoom: [${roomId}](https://matrix.to/#/${roomId}/${event.eventId})\nSent By: ${event.sender}\nMessage: ${event.textBody}\nLink: \`${urlMatch[i]}\``,
+                  body: `**New Telegram URL Found**\n\nRoom: [${this.client.getPublishedAlias(
+                    roomId
+                  )}](https://matrix.to/#/${roomId}/${event.eventId})\nSent By: ${event.sender}\nMessage: ${
+                    event.textBody
+                  }\nLink: \`${urlMatch[i]}\``,
                   msgtype: 'm.notice',
                   format: 'org.matrix.custom.html',
                   formatted_body: `<b>New Telegram URL Found</b><br><table><tr><th>Room</th><th>Sent By</th><th>Message</th><th>Link</th></tr><tr><td><a href=https://matrix.to/#/${roomId}/${event.eventId}>${roomId}</a></td><td>${event.sender}</td><td><code>${event.textBody}</code></td><td><code>${urlMatch[i]}</code></td></tr></table>`
