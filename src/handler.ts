@@ -234,18 +234,22 @@ export default class CommandHandler {
       const joinedRooms = await client.getJoinedRooms();
       if (joinedRooms.includes(config.phishDetectedLogRoom)) {
         client.setTyping(config.phishDetectedLogRoom, true);
+        let alias = await client.getPublishedAlias(roomId);
+        if (!alias)
+          alias = (await client.getRoomState(roomId)).find(state => state.type == 'm.room.name')['content']['name'];
+        console.log(alias);
         await client
           .sendMessage(config.phishDetectedLogRoom, {
-            body: `**${scam} Link Detected**\n\nRoom: [${await client.getPublishedAlias(
-              roomId
-            )}](https://matrix.to/#/${roomId}/${event.eventId})\nSent By: ${event.sender}\nAction: ${action.join(
+            body: `**${scam} Link Detected**\n\nRoom: [${alias}](https://matrix.to/#/${roomId}/${
+              event.eventId
+            })\nSent By: ${event.sender}\nAction: ${action.join(
               ', '
             )}\nDetection Method:${detectionMethod}\n Message: ${event.textBody}\nLink: \`${url}\``,
             msgtype: 'm.notice',
             format: 'org.matrix.custom.html',
             formatted_body: `<b>${scam} Link Detected</b><br><table><tr><th>Room</th><th>Sent By</th><th>Action</th><th>Link</th><th>Detection Method</th><th>Message</th></tr><tr><td><a href=https://matrix.to/#/${roomId}/${
               event.eventId
-            }>${roomId}</a></td><td>${event.sender}</td><td>${action.join(
+            }>${alias}</a></td><td>${event.sender}</td><td>${action.join(
               ', '
             )}</td><td><code>${url}</code></td><td>${detectionMethod}</td><td><code>${
               event.textBody
@@ -312,17 +316,18 @@ export default class CommandHandler {
             if (config.telegramLogRoom && joinedRooms.includes(config.telegramLogRoom)) {
               LogService.info('telegram', `New Telegram URL | ${urlMatch[i]}`);
               this.client.setTyping(config.telegramLogRoom, true);
+              let alias = await this.client.getPublishedAlias(roomId);
+              if (!alias)
+                alias = (await this.client.getRoomState(roomId)).find(state => state.type == 'm.room.name')['content'][
+                  'name'
+                ];
               // LINK MUST BE LAST URL IN MESSAGE
               const messageId = await this.client
                 .sendMessage(config.telegramLogRoom, {
-                  body: `**New Telegram URL Found**\n\nRoom: [${await this.client.getPublishedAlias(
-                    roomId
-                  )}](https://matrix.to/#/${roomId}/${event.eventId})\nSent By: ${event.sender}\nMessage: ${
-                    event.textBody
-                  }\nLink: \`${urlMatch[i]}\``,
+                  body: `**New Telegram URL Found**\n\nRoom: [${alias}](https://matrix.to/#/${roomId}/${event.eventId})\nSent By: ${event.sender}\nMessage: ${event.textBody}\nLink: \`${urlMatch[i]}\``,
                   msgtype: 'm.notice',
                   format: 'org.matrix.custom.html',
-                  formatted_body: `<b>New Telegram URL Found</b><br><table><tr><th>Room</th><th>Sent By</th><th>Message</th><th>Link</th></tr><tr><td><a href=https://matrix.to/#/${roomId}/${event.eventId}>${roomId}</a></td><td>${event.sender}</td><td><code>${event.textBody}</code></td><td><code>${urlMatch[i]}</code></td></tr></table>`
+                  formatted_body: `<b>New Telegram URL Found</b><br><table><tr><th>Room</th><th>Sent By</th><th>Message</th><th>Link</th></tr><tr><td><a href=https://matrix.to/#/${roomId}/${event.eventId}>${alias}</a></td><td>${event.sender}</td><td><code>${event.textBody}</code></td><td><code>${urlMatch[i]}</code></td></tr></table>`
                 })
                 .catch(() => null);
               this.client.setTyping(config.telegramLogRoom, false);
