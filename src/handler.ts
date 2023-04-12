@@ -236,7 +236,7 @@ export default class CommandHandler {
         client.setTyping(config.phishDetectedLogRoom, true);
         await client
           .sendMessage(config.phishDetectedLogRoom, {
-            body: `**${scam} Link Detected**\n\nRoom: [${client.getPublishedAlias(
+            body: `**${scam} Link Detected**\n\nRoom: [${await client.getPublishedAlias(
               roomId
             )}](https://matrix.to/#/${roomId}/${event.eventId})\nSent By: ${event.sender}\nAction: ${action.join(
               ', '
@@ -315,7 +315,7 @@ export default class CommandHandler {
               // LINK MUST BE LAST URL IN MESSAGE
               const messageId = await this.client
                 .sendMessage(config.telegramLogRoom, {
-                  body: `**New Telegram URL Found**\n\nRoom: [${this.client.getPublishedAlias(
+                  body: `**New Telegram URL Found**\n\nRoom: [${await this.client.getPublishedAlias(
                     roomId
                   )}](https://matrix.to/#/${roomId}/${event.eventId})\nSent By: ${event.sender}\nMessage: ${
                     event.textBody
