@@ -5,6 +5,7 @@ import {
   MessageEvent,
   MessageEventContent,
   PowerLevelAction,
+  RichRepliesPreprocessor,
   RoomEvent,
   RoomEventContent,
   UserID
@@ -83,6 +84,11 @@ export default class CommandHandler {
     let isThread = false;
 
     if (fullContent['m.relates_to']?.rel_type === 'm.thread') isThread = true;
+    else if (fullContent['m.relates_to']?.['m.in_reply_to'].event_id) {
+      console.log('Rich Processing');
+      const replyProcessor = new RichRepliesPreprocessor();
+      await replyProcessor.processEvent(event, this.client);
+    }
 
     // For testing purposes when not specifically checking a link
     // if (event.textBody.includes('scam')) return warnMatrix(this.client, 'https://www.phishing.org/', 'phish', 1, '1');
