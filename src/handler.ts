@@ -642,6 +642,17 @@ export default class CommandHandler {
           const relationEvent = new MessageEvent(relationEventRaw);
           const text = removeMd(relationEvent.textBody);
           const urlGroups = Array.from(text.matchAll(this.urlRegex), m => m.groups);
+          // let matrixUrlGroup = Array.from(relationEvent.textBody.matchAll(this.urlRegex), m => m.groups)[0];
+          // let scamRoomId: string | null = null;
+          // let scamEventId: string | null = null;
+          // if (matrixUrlGroup) {
+          //   matrixUrlGroup.path = matrixUrlGroup.path.slice(0, -1);
+          //   const match = matrixUrlGroup.path.match(/\/([^/:]+:?[^/:]*:?[^/]*)(\/\$[^/]+)+/);
+          //   if (match) {
+          //     scamRoomId = match[1];
+          //     scamEventId = match[2].slice(1);
+          //   }
+          // }
           const telegramGroup = urlGroups[urlGroups.length - 1];
           if (telegramGroup?.domain === 't.me') {
             const telegramId = telegramGroup.path.slice(1);
@@ -663,6 +674,19 @@ export default class CommandHandler {
               date: Date.now()
             });
             await newData.save();
+
+            // Commented out because not sure how to redact if needed
+            // if (scamRoomId && scamEventId)
+            //   await this.client
+            //     .sendEvent(scamRoomId, 'm.reaction', {
+            //       'm.relates_to': {
+            //         event_id: scamEventId,
+            //         key: `🚨 Telegram Scam 🚨`,
+            //         rel_type: 'm.annotation'
+            //       }
+            //     })
+            //     .catch(() => null);
+
             return LogService.info('telegram', `Marked Scam | ${telegramId}`);
           }
         } else if (content['m.relates_to'].key.includes('🔄')) {
