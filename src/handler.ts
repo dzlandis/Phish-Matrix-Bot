@@ -33,7 +33,7 @@ export default class CommandHandler {
   private userId: string | undefined;
   private localpart: string | undefined;
   private urlRegex = RegExp(
-    /(?<http>(?:(?:[a-z]{4,5}:)?\/\/))?(?:\S+(?:\S*)?@)?(?<domain>(?:25[0-5]|2[0-4]\d|1\d\d|[1-9]\d|\d)(?:\.(?:25[0-5]|2[0-4]\d|1\d\d|[1-9]\d|\d)){3}|(?<sub>(?:[a-z\u00a1-\uffff0-9-_]+\.)*)?(?<base>[a-z\u00a1-\uffff0-9-_]+\.)+(?:(?<TLD>[a-z\u00a1-\uffff]{2,})))(?::\d{2,5})?(?<path>[/?#][^\s"]*)?|(?<tldOnly>(?:(?:[a-z]{4,5}:)?\/\/)[a-z\u00a1-\uffff0-9-_]+)/g
+    /(?<http>(?:(?:[a-z]{4,5}:)?\/\/))?(?:\S+(?:\S*)?@)?(?<domain>(?:25[0-5]|2[0-4]\d|1\d\d|[1-9]\d|\d)(?:\.(?:25[0-5]|2[0-4]\d|1\d\d|[1-9]\d|\d)){3}|(?<sub>(?:[a-z\u00a1-\uffff0-9-_]+\.)*)?(?<base>[a-z\u00a1-\uffff0-9-_]+\.)+(?:(?<tld>[a-z\u00a1-\uffff]{2,})))(?::\d{2,5})?(?<path>[/?#][^\s"]*)?|(?<tldOnly>(?:(?:[a-z]{4,5}:)?\/\/)[a-z\u00a1-\uffff0-9-_]+)/g
   ); // regex courtesy of user#6969 (212795145639165952) on Discord
 
   constructor(private client: MatrixClient) {}
@@ -361,17 +361,15 @@ export default class CommandHandler {
         }
 
         if (
-          domain.toLowerCase() === 'matrix.org' ||
-          domain.toLowerCase() === 'matrix.to' ||
-          domain.toLowerCase() === 'spec.matrix.org' ||
-          domain.toLowerCase() === 'view.matrix.org' ||
-          domain.toLowerCase() === 'youtube.com' ||
-          domain.toLowerCase() === 'youtu.be' ||
-          domain.toLowerCase() === 'sec.gov' ||
-          domain.toLowerCase() === 'github.com' ||
-          domain.toLowerCase() === 'gitlab.com' ||
-          domain.toLowerCase() === 'tenor.com' ||
-          domain.toLowerCase() === 'ipfs.io'
+          (group.base.toLowerCase() === 'matrix.' && group.tld.toLowerCase() === 'org') ||
+          (group.base.toLowerCase() === 'matrix.' && group.tld.toLowerCase() === 'to') ||
+          (group.base.toLowerCase() === 'youtube.' && group.tld.toLowerCase() === 'com') ||
+          (group.base.toLowerCase() === 'youtu.' && group.tld.toLowerCase() === 'be') ||
+          (group.base.toLowerCase() === 'sec.' && group.tld.toLowerCase() === 'gov') ||
+          (group.base.toLowerCase() === 'github.' && group.tld.toLowerCase() === 'com') ||
+          (group.base.toLowerCase() === 'gitlab.' && group.tld.toLowerCase() === 'com') ||
+          (group.base.toLowerCase() === 'tenor.' && group.tld.toLowerCase() === 'com') ||
+          (group.base.toLowerCase() === 'ipfs.' && group.tld.toLowerCase() === 'io')
         )
           continue;
         const transactionId = uuid();
