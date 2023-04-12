@@ -237,7 +237,6 @@ export default class CommandHandler {
         let alias = await client.getPublishedAlias(roomId);
         if (!alias)
           alias = (await client.getRoomState(roomId)).find(state => state.type == 'm.room.name')['content']['name'];
-        console.log(alias);
         await client
           .sendMessage(config.phishDetectedLogRoom, {
             body: `**${scam} Link Detected**\n\nRoom: [${alias}](https://matrix.to/#/${roomId}/${
