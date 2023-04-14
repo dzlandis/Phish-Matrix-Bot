@@ -307,7 +307,7 @@ export default class CommandHandler {
         const domain = group.domain;
 
         if (domain.toLowerCase() === 't.me') {
-          const telegramId = group.path.slice(1).toLowerCase();
+          const telegramId = group.path.slice(1);
           const safeTG = await safeTelegramData.findOne({
             id: telegramId
           });
@@ -621,7 +621,7 @@ export default class CommandHandler {
           const urlGroups = Array.from(text.matchAll(this.urlRegex), m => m.groups);
           const telegramGroup = urlGroups[urlGroups.length - 1];
           if (telegramGroup?.domain === 't.me') {
-            const telegramId = telegramGroup.path.slice(1).toLowerCase();
+            const telegramId = telegramGroup.path.slice(1);
             const safeTG = await safeTelegramData.findOne({
               id: telegramId
             });
@@ -660,7 +660,7 @@ export default class CommandHandler {
           // }
           const telegramGroup = urlGroups[urlGroups.length - 1];
           if (telegramGroup?.domain === 't.me') {
-            const telegramId = telegramGroup.path.slice(1).toLowerCase();
+            const telegramId = telegramGroup.path.slice(1);
 
             const maliciousTG = await maliciousTelegramData.findOne({
               id: telegramId
@@ -702,7 +702,7 @@ export default class CommandHandler {
           const urlGroups = Array.from(text.matchAll(this.urlRegex), m => m.groups);
           const telegramGroup = urlGroups[urlGroups.length - 1];
           if (telegramGroup?.domain === 't.me') {
-            const telegramId = telegramGroup.path.slice(1).toLowerCase();
+            const telegramId = telegramGroup.path.slice(1);
 
             const maliciousTG = await maliciousTelegramData.findOne({
               id: telegramId
