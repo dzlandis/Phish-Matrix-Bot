@@ -85,7 +85,6 @@ export default class CommandHandler {
 
     if (fullContent['m.relates_to']?.rel_type === 'm.thread') isThread = true;
     else if (fullContent['m.relates_to']?.['m.in_reply_to'].event_id) {
-      console.log('Rich Processing');
       const replyProcessor = new RichRepliesPreprocessor();
       await replyProcessor.processEvent(event, this.client);
     }
