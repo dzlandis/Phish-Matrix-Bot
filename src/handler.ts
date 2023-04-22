@@ -303,7 +303,7 @@ export default class CommandHandler {
       for (const group of urlGroups) {
         i++;
         if (!group?.domain) continue;
-        const domain = group.domain;
+        let domain = group.domain;
 
         if (domain.toLowerCase() === 't.me') {
           const telegramId = group.path.slice(1);
@@ -385,6 +385,31 @@ export default class CommandHandler {
           (group.base.toLowerCase() === 'ipfs.' && group.tld.toLowerCase() === 'io')
         )
           continue;
+        const urlFollow = await fetch(
+          `https://unshorten.me/json/${group.http ?? ''}${group.sub ?? ''}${group.base ?? ''}${group.tld ?? ''}${
+            group.path ?? ''
+          }`,
+          {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json'
+            }
+          }
+        );
+        if (urlFollow.ok) {
+          interface URLFollow {
+            requested_url: string;
+            success: boolean;
+            resolved_url: string;
+            usage_count: number | undefined;
+            remaining_calls: number | undefined;
+          }
+          const urlFollowOutput: URLFollow = await urlFollow.json();
+          if (urlFollowOutput.resolved_url && urlFollowOutput.resolved_url.length > 0) {
+            const urlFollowGroups = Array.from(urlFollowOutput.resolved_url.matchAll(this.urlRegex), m => m.groups);
+            domain = urlFollowGroups[0]?.domain ?? domain;
+          }
+        }
         const transactionId = uuid();
         LogService.info('url-scan', `URL Found! Scanning... | ${domain} | ${transactionId}`);
 
