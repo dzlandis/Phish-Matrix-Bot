@@ -382,7 +382,8 @@ export default class CommandHandler {
           (group.base.toLowerCase() === 'github.' && group.tld.toLowerCase() === 'com') ||
           (group.base.toLowerCase() === 'gitlab.' && group.tld.toLowerCase() === 'com') ||
           (group.base.toLowerCase() === 'tenor.' && group.tld.toLowerCase() === 'com') ||
-          (group.base.toLowerCase() === 'ipfs.' && group.tld.toLowerCase() === 'io')
+          (group.base.toLowerCase() === 'ipfs.' &&
+            (group.tld.toLowerCase() === 'io' || group.tld.toLowerCase() === 'tech'))
         )
           continue;
         const urlFollow = await fetch(
