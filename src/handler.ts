@@ -73,7 +73,7 @@ export default class CommandHandler {
 
     interface MyMessageEventContent extends MessageEventContent {
       'm.relates_to'?: {
-        event_id: string;
+        event_id: string | null;
         is_falling_back: boolean;
         'm.in_reply_to': { event_id: string };
         rel_type: string;
@@ -84,7 +84,7 @@ export default class CommandHandler {
     let isThread = false;
 
     if (fullContent['m.relates_to']?.rel_type === 'm.thread') isThread = true;
-    else if (fullContent['m.relates_to']?.['m.in_reply_to'].event_id) {
+    else if (fullContent['m.relates_to']?.['m.in_reply_to']?.event_id) {
       const replyProcessor = new RichRepliesPreprocessor();
       await replyProcessor.processEvent(event, this.client);
     }
