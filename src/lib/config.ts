@@ -13,6 +13,7 @@ interface IConfig {
   homeserverUrl: string;
   phishDetectedLogRoom: string;
   telegramLogRoom: string;
+  ignoredRooms: string[];
   usersWithPerms: string[];
   prefix: string;
   autoJoin: boolean;

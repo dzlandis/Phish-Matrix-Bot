@@ -2,6 +2,7 @@
     "homeserverUrl": "https://matrix.org",
     "phishDetectedLogRoom": "!pvNhEnZoEQAvudegVA:matrix.org",
     "telegramLogRoom": "!BGtrfJjSiPqRarVNmw:matrix.org",
+    "ignoredRooms": ["!VoDTAHuzsrcRynFdct:matrix.org", "!atXuDoAUFqfwwIeVwO:matrix.org"],
     "usersWithPerms": ["@dzlandis:mozilla.org", "@dzlandis:matrix.org"],
     "prefix": "!phish",
     "autoJoin": true,

@@ -68,6 +68,7 @@ export default class CommandHandler {
     if (!userId) return;
     if (event.isRedacted) return; // Ignore redacted events that come through
     if (event.sender === userId) return; // Ignore ourselves
+    if (config.ignoredRooms && config.ignoredRooms.includes(roomId)) return; // Ignore ignored rooms.
     if (event.messageType !== 'm.text') return; // Ignore non-text messages
     const permissionToSendMessage = await this.client.userHasPowerLevelFor(userId, roomId, 'm.room.message', false);
 
