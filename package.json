@@ -5,7 +5,7 @@
   "private": true,
   "main": "./dist/index.js",
   "author": "dzlandis <49926644+dzlandis@users.noreply.github.com>",
-  "license": "MIT",
+  "license": "GNU GPL",
   "dependencies": {
     "@skyra/env-utilities": "^1.1.0",
     "@types/remove-markdown": "^0.3.1",
