@@ -380,7 +380,8 @@ export default class CommandHandler {
           (group.base.toLowerCase() === 'youtube.' && group.tld.toLowerCase() === 'com') ||
           (group.base.toLowerCase() === 'youtu.' && group.tld.toLowerCase() === 'be') ||
           (group.base.toLowerCase() === 'sec.' && group.tld.toLowerCase() === 'gov') ||
-          (group.base.toLowerCase() === 'github.' && group.tld.toLowerCase() === 'com') ||
+          (group.base.toLowerCase() === 'github.' &&
+            (group.tld.toLowerCase() === 'com' || group.tld.toLowerCase() === 'io')) ||
           (group.base.toLowerCase() === 'gitlab.' && group.tld.toLowerCase() === 'com') ||
           (group.base.toLowerCase() === 'tenor.' && group.tld.toLowerCase() === 'com') ||
           (group.base.toLowerCase() === 'ipfs.' &&
