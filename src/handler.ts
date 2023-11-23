@@ -3,12 +3,12 @@ import {
   MatrixClient,
   MentionPill,
   MessageEvent,
-  MessageEventContent,
   PowerLevelAction,
   RichRepliesPreprocessor,
   RoomEvent,
-  RoomEventContent,
-  UserID
+  UserID,
+  type MessageEventContent,
+  type RoomEventContent
 } from 'matrix-bot-sdk';
 import mongoose from 'mongoose';
 import removeMd from 'remove-markdown';

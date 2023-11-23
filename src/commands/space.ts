@@ -1,4 +1,4 @@
-import { MatrixClient, MentionPill, MessageEvent, MessageEventContent } from 'matrix-bot-sdk';
+import { MatrixClient, MentionPill, MessageEvent, type MessageEventContent } from 'matrix-bot-sdk';
 
 export async function runSpaceCommand(roomId: string, event: MessageEvent<MessageEventContent>, client: MatrixClient) {
   interface MyMessageEventContent extends MessageEventContent {

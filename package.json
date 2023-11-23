@@ -7,18 +7,18 @@
   "author": "dzlandis <49926644+dzlandis@users.noreply.github.com>",
   "license": "GNU GPL",
   "dependencies": {
-    "@skyra/env-utilities": "^1.1.0",
-    "@types/remove-markdown": "^0.3.1",
-    "@types/uuid": "^9.0.1",
-    "matrix-bot-sdk": "^0.6.4",
-    "mongoose": "^7.0.3",
+    "@skyra/env-utilities": "^1.2.1",
+    "@types/remove-markdown": "^0.3.4",
+    "@types/uuid": "^9.0.7",
+    "matrix-bot-sdk": "^0.7.0",
+    "mongoose": "^8.0.1",
     "remove-markdown": "^0.5.0",
-    "uuid": "^9.0.0"
+    "uuid": "^9.0.1"
   },
   "devDependencies": {
-    "@sapphire/ts-config": "^3.3.4",
-    "@types/node": "^18.15.11",
-    "typescript": "^5.0.4"
+    "@sapphire/ts-config": "^4.0.1",
+    "@types/node": "^20.9.4",
+    "typescript": "^5.3.2"
   },
   "description": "A bot for detecting phishing links on Matrix.",
   "scripts": {
