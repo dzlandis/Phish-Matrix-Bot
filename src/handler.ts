@@ -14,6 +14,7 @@ import mongoose from 'mongoose';
 import removeMd from 'remove-markdown';
 import { v4 as uuid } from 'uuid';
 import { runHelpCommand } from './commands/help.js';
+import { runJoinCommand } from './commands/join.js';
 import { runPingCommand } from './commands/ping.js';
 import { runSpaceCommand } from './commands/space.js';
 import config from './lib/config.js';
@@ -595,6 +596,8 @@ export default class CommandHandler {
         return runSpaceCommand(roomId, event, this.client);
       else if (args[0] === 'help' && permissionToSendMessage) {
         return runHelpCommand(roomId, event, this.client);
+      } else if (args[0] === 'join' && permissionToSendMessage) {
+        return runJoinCommand(roomId, event, this.client, args);
       }
     } catch (e) {
       // Log the error

@@ -12,6 +12,7 @@ declare module '@skyra/env-utilities' {
 interface IConfig {
   homeserverUrl: string;
   phishDetectedLogRoom: string;
+  phishCommandsRoom: string;
   telegramLogRoom: string;
   ignoredRooms: string[];
   usersWithPerms: string[];
