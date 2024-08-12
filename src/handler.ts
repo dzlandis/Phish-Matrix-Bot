@@ -18,6 +18,7 @@ import { runJoinCommand } from './commands/join.js';
 import { runPingCommand } from './commands/ping.js';
 import { runSpaceCommand } from './commands/space.js';
 import config from './lib/config.js';
+import { model as eventWarningData } from './lib/schemas/eventWarning.js';
 import { model as maliciousTelegramData } from './lib/schemas/maliciousTelegram.js';
 import { model as safeTelegramData } from './lib/schemas/safeTelegram.js';
 
@@ -168,6 +169,7 @@ export default class CommandHandler {
       LogService.info('url-scan', `${scam} Link Detected, completing warn to Matrix... | ${transactionId}`);
       let action: string[] = [];
 
+      let responseMessageId;
       if (userId) {
         const permissionToKick = await client.userHasPowerLevelForAction(userId, roomId, PowerLevelAction.Kick);
         const permissionToDelete = await client.userHasPowerLevelForAction(
@@ -197,9 +199,8 @@ export default class CommandHandler {
             })
             .catch(() => null);
 
-          let messageId;
           if (isThread && permissionToSendMessage)
-            messageId = await client.sendMessage(roomId, {
+            responseMessageId = await client.sendMessage(roomId, {
               msgtype: 'm.notice',
               body: `🚨 ${scam} LINK DETECTED 🚨\n\nA MESSAGE HAS BEEN DETECTED TO CONTAIN A PROBLEMATIC LINK. WE RECOMMEND NOT PRESSING ANY LINKS WITHIN THE MESSAGE.\n\nIF THIS IS A FALSE POSITIVE, PLEASE LET US KNOW BY JOINING OUR SUPPORT SERVER THROUGH THE COMMAND !PHISH SUPPORT`,
               format: 'org.matrix.custom.html',
@@ -210,7 +211,7 @@ export default class CommandHandler {
               }
             });
           else if (permissionToSendMessage)
-            messageId = await client.sendHtmlNotice(
+            responseMessageId = await client.sendHtmlNotice(
               roomId,
               `<h4>🚨 ${scam} Link Detected 🚨</h4><h5>A message has been detected to contain a problematic link. We recommend not pressing any links within the message.</h5><h6>If this is a false positive, please let us know by joining our support server through the command <code>${COMMAND_PREFIX} support</code></h6>`
             );
@@ -218,7 +219,7 @@ export default class CommandHandler {
           await client
             .sendEvent(roomId, 'm.reaction', {
               'm.relates_to': {
-                event_id: messageId,
+                event_id: responseMessageId,
                 key: `👍`,
                 rel_type: 'm.annotation'
               }
@@ -227,7 +228,7 @@ export default class CommandHandler {
           await client
             .sendEvent(roomId, 'm.reaction', {
               'm.relates_to': {
-                event_id: messageId,
+                event_id: responseMessageId,
                 key: `👎`,
                 rel_type: 'm.annotation'
               }
@@ -237,6 +238,21 @@ export default class CommandHandler {
       }
 
       client.setTyping(roomId, false);
+
+      const existingMessageEventSuspect = await eventWarningData.findOne({
+        suspectMessageId: event.eventId
+      });
+
+      if (!existingMessageEventSuspect) {
+        const newEventWarning = new eventWarningData({
+          suspectMessageId: event.eventId,
+          suspectId: event.sender,
+          responseMessageId: responseMessageId,
+          suspectURL: url,
+          suspectMessageRemoved: action.includes('Delete')
+        });
+        await newEventWarning.save();
+      }
 
       const joinedRooms = await client.getJoinedRooms();
       if (joinedRooms.includes(config.phishDetectedLogRoom)) {
@@ -624,9 +640,40 @@ export default class CommandHandler {
   }
 
   private async onRoomEvent(roomId: string, ev: any) {
-    if (!config.telegramLogRoom || config.telegramLogRoom !== roomId) return;
     const event = new RoomEvent(ev);
     if (event.sender === this.userId) return;
+
+    interface MyMessageEventRedaction extends RoomEventContent {
+      redacts: string;
+    }
+
+    if (event.type == 'm.room.redaction') {
+      // @ts-ignore
+      const content: MyMessageEventRedaction = event.content;
+
+      const redactedEvent = content.redacts;
+      const eventWarning = await eventWarningData.findOne({
+        suspectMessageId: redactedEvent
+      });
+      if (!eventWarning) return;
+
+      if (
+        eventWarning.suspectMessageId === redactedEvent &&
+        eventWarning.suspectMessageRemoved === false &&
+        eventWarning.responseMessageId
+      ) {
+        await this.client.redactEvent(
+          roomId,
+          eventWarning.responseMessageId,
+          `At risk message was redacted by ${event.sender}, automatically removed warning...`
+        );
+        eventWarning.suspectMessageRemoved = true;
+        await eventWarning.save();
+        LogService.info('warning-redaction', `Redacted Warning, at risk message was removed | ${redactedEvent}`);
+      }
+    }
+
+    if (!config.telegramLogRoom || config.telegramLogRoom !== roomId) return;
 
     if (!config.usersWithPerms.includes(event.sender)) return;
 
