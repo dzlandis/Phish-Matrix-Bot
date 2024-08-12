@@ -25,5 +25,5 @@
     "build": "tsc",
     "start": "node ."
   },
-  "packageManager": "yarn@4.0.2"
+  "packageManager": "yarn@4.4.0"
 }
