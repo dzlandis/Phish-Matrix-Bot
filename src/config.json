@@ -4,7 +4,7 @@
     "phishCommandsRoom": "!lQxRwuQqnvKPsMMIyI:matrix.org",
     "telegramLogRoom": "!BGtrfJjSiPqRarVNmw:matrix.org",
     "ignoredRooms": ["!VoDTAHuzsrcRynFdct:matrix.org", "!atXuDoAUFqfwwIeVwO:matrix.org"],
-    "usersWithPerms": ["@dzlandis:mozilla.org", "@dzlandis:matrix.org"],
+    "usersWithReportPerms": ["@dzlandis:mozilla.org", "@dzlandis:matrix.org", "@jjj333:pain.agency"],
     "prefix": "!phish",
     "autoJoin": true,
     "dataPath": "dist/storage",

@@ -15,7 +15,7 @@ interface IConfig {
   phishCommandsRoom: string;
   telegramLogRoom: string;
   ignoredRooms: string[];
-  usersWithPerms: string[];
+  usersWithReportPerms: string[];
   prefix: string;
   autoJoin: boolean;
   dataPath: string;

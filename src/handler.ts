@@ -675,7 +675,7 @@ export default class CommandHandler {
 
     if (!config.telegramLogRoom || config.telegramLogRoom !== roomId) return;
 
-    if (!config.usersWithPerms.includes(event.sender)) return;
+    if (!config.usersWithReportPerms.includes(event.sender)) return;
 
     interface MyMessageEventContent extends RoomEventContent {
       'm.relates_to'?: {
